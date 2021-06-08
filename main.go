@@ -2,26 +2,46 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/dhritigarg02/iitk-coin/server"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Info struct{
-	rollno int
-	name string
+func handleError(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
-func add_data(database *sql.DB, row Info) {
+func connectDB() *sql.DB {
 
-	statement, _ := database.Prepare("INSERT INTO User(rollno, name) VALUES(?, ?)")
-	statement.Exec(row.rollno, row.name)
+	database, err := sql.Open("sqlite3", "./user_data.db")
+	handleError(err)
+
+	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS User (rollno INTEGER PRIMARY KEY, name TEXT, batch INTEGER)")
+	handleError(err)
+
+	_, err = statement.Exec()
+	handleError(err)
+
+	statement, err = database.Prepare("CREATE TABLE IF NOT EXISTS Auth (rollno INTEGER PRIMARY KEY, password TEXT)")
+	handleError(err)
+
+	_, err = statement.Exec()
+	handleError(err)
+
+	return database
 }
-
 func main() {
 
-	database, _ := sql.Open("sqlite3", "./user_data.db")
-	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS User (rollno INTEGER PRIMARY KEY, name TEXT)")
-	statement.Exec()
+	database := connectDB()
 
-	add_data(database, Info{190289, "Dhriti"})
-	add_data(database, Info{190458, "Harshit"})
+	http.HandleFunc("/login", server.Login(database))
+	http.HandleFunc("/signup", server.Signup(database))
+
+	fmt.Println("Starting server at port 8080....")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
