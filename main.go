@@ -39,8 +39,10 @@ func main() {
 
 	database := connectDB()
 
+	http.HandleFunc("/", server.HelloHandler)
 	http.HandleFunc("/login", server.Login(database))
 	http.HandleFunc("/signup", server.Signup(database))
+	http.HandleFunc("/secretpage", server.Secretpage)
 
 	fmt.Println("Starting server at port 8080....")
 	log.Fatal(http.ListenAndServe(":8080", nil))

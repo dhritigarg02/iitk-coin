@@ -9,6 +9,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func HelloHandler(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("Hello, Web!\n"))
+}
+
 func Login(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -63,6 +67,7 @@ func Signup(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		var newUser User
 		err := json.NewDecoder(r.Body).Decode(&newUser)
 		if err != nil {
+			log.Println(err)
 			http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
 			return
 		}
@@ -72,30 +77,48 @@ func Signup(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Println(err)
 			return
-		} 
-		if notExists {
-			hash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), 5)
-			if err != nil {
-				http.Error(w, "Error while Hashing Password, Please Try Again", http.StatusInternalServerError)
-				log.Println(err)
-				return
-			}
-			newUser.Password = string(hash)
-			err = Add_User(db, newUser)
-			if err != nil {
-				http.Error(w, "Error while creating User, Please Try Again", http.StatusInternalServerError)
-				log.Println(err)
-				return
-			}
-			err = Add_auth_data(db, newUser)
-			if err != nil {
-				http.Error(w, "Error while creating User, Please Try Again", http.StatusInternalServerError)
-				log.Println(err)
-				return
-			}
-			w.Write([]byte("Signup Successful!"))
-		} else {
-			http.Error(w, "User already exists!", http.StatusConflict)
 		}
+		if !(notExists) {
+			http.Error(w, "User already exists!", http.StatusConflict)
+			return
+		}
+
+		hash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), 5)
+		if err != nil {
+			http.Error(w, "Error while Hashing Password, Please Try Again", http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		newUser.Password = string(hash)
+		err = Add_User(db, newUser)
+		if err != nil {
+			http.Error(w, "Error while creating User, Please Try Again", http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		err = Add_auth_data(db, newUser)
+		if err != nil {
+			http.Error(w, "Error while creating User, Please Try Again", http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		w.Write([]byte("Signup Successful!"))
 	}
+}
+
+func Secretpage(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "GET" {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	tokenString := r.Header.Get("Authorization")
+
+	_, err := VerifyToken(tokenString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	w.Write([]byte("Authorized!"))
 }
