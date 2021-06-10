@@ -10,7 +10,7 @@ import (
 )
 
 func HelloHandler(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Hello, Web!\n"))
+	w.Write([]byte("Hello, Web!\n"))
 }
 
 func Login(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +36,7 @@ func Login(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		}
 		if result != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("[Login] [ERROR] : %v\n", err)
 			return
 		}
 		err = bcrypt.CompareHashAndPassword([]byte(password), []byte(loginUser.Password))
@@ -48,7 +48,7 @@ func Login(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		token, err := CreateToken(loginUser.RollNo)
 		if err != nil {
 			http.Error(w, "Error while generating token, please try again", http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("[Login] [ERROR] : %v\n", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -67,7 +67,6 @@ func Signup(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		var newUser User
 		err := json.NewDecoder(r.Body).Decode(&newUser)
 		if err != nil {
-			log.Println(err)
 			http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
 			return
 		}
@@ -75,7 +74,7 @@ func Signup(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		notExists, err := UserExists(db, newUser.RollNo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("[Signup] [ERROR] : %v\n", err)
 			return
 		}
 		if !(notExists) {
@@ -86,20 +85,20 @@ func Signup(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		hash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), 5)
 		if err != nil {
 			http.Error(w, "Error while Hashing Password, Please Try Again", http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("[Signup] [ERROR] : %v\n", err)
 			return
 		}
 		newUser.Password = string(hash)
 		err = Add_User(db, newUser)
 		if err != nil {
 			http.Error(w, "Error while creating User, Please Try Again", http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("[Signup] [ERROR] : %v\n", err)
 			return
 		}
 		err = Add_auth_data(db, newUser)
 		if err != nil {
 			http.Error(w, "Error while creating User, Please Try Again", http.StatusInternalServerError)
-			log.Println(err)
+			log.Printf("[Signup] [ERROR] : %v\n", err)
 			return
 		}
 		w.Write([]byte("Signup Successful!"))

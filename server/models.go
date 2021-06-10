@@ -1,8 +1,9 @@
 package server
 
 import (
-	"time"
 	"errors"
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -29,7 +30,7 @@ type Token struct {
 
 type Payload struct {
 	ID        uuid.UUID `json:"id"`
-	Rollno          int `json:"rollno"`
+	Rollno    int       `json:"rollno"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiredAt time.Time `json:"expired_at"`
 }

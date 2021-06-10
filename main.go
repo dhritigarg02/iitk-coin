@@ -2,11 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/dhritigarg02/iitk-coin/server"
+	"github.com/gorilla/handlers"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -39,11 +40,12 @@ func main() {
 
 	database := connectDB()
 
-	http.HandleFunc("/", server.HelloHandler)
-	http.HandleFunc("/login", server.Login(database))
-	http.HandleFunc("/signup", server.Signup(database))
-	http.HandleFunc("/secretpage", server.Secretpage)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", server.HelloHandler)
+	mux.HandleFunc("/login", server.Login(database))
+	mux.HandleFunc("/signup", server.Signup(database))
+	mux.HandleFunc("/secretpage", server.Secretpage)
 
-	fmt.Println("Starting server at port 8080....")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("[MAIN] [INFO] Starting server at port 8080....")
+	log.Fatal(http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, mux)))
 }
