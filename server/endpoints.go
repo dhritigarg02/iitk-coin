@@ -26,6 +26,12 @@ func Login(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
 			return
 		}
+
+		if loginUser.RollNo == 0 || loginUser.Password == "" {
+			http.Error(w, "Some fields are missing!", http.StatusBadRequest)
+			return
+		}
+
 		var password string
 		row := db.QueryRow("SELECT password FROM Auth WHERE rollno = ?", loginUser.RollNo)
 		result := row.Scan(&password)
@@ -68,6 +74,11 @@ func Signup(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
 		err := json.NewDecoder(r.Body).Decode(&newUser)
 		if err != nil {
 			http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
+			return
+		}
+
+		if newUser.Name == "" || newUser.Password == "" || newUser.RollNo == 0 || newUser.Batch == 0 {
+			http.Error(w, "Some fields are missing!", http.StatusBadRequest)
 			return
 		}
 
