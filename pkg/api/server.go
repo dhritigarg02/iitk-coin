@@ -20,8 +20,8 @@ func (server *Server) SetupRouter() {
 	router.HandleFunc("/login", server.Login)
 	router.HandleFunc("/signup", server.Signup)
 	router.HandleFunc("/secretpage", server.Secretpage)
-	//router.HandleFunc("/reward", server.RewardCoins)
-	//router.HandleFunc("/transfer", server.TransferCoins)
+	router.HandleFunc("/reward", server.RewardCoins)
+	router.HandleFunc("/transfer", server.TransferCoins)
 	router.HandleFunc("/getbalance", server.GetBalance)
 
 	server.Router = router

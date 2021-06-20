@@ -156,3 +156,97 @@ func (server *Server) GetBalance(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]int{"coins":balance})
 }
+
+func (server *Server) RewardCoins(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "POST" {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var reward db.EntryParams
+	err := json.NewDecoder(r.Body).Decode(&reward)
+	if err != nil {
+		http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if reward.RollNo == 0 || reward.Amount == 0 {
+		http.Error(w, "Some fields are missing!", http.StatusBadRequest)
+		return
+	}
+
+	exists, err := server.DBstore.UserExists(reward.RollNo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[RewardCoins] [ERROR] : %v\n", err)
+		return
+	}
+	if !exists {
+		http.Error(w, "User does not exist!", http.StatusNotFound)
+		return
+	}
+
+	err = server.DBstore.AddCoins(reward)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[RewardCoins] [ERROR] : %v\n", err)
+		return
+	}
+	w.Write([]byte("coins rewarded!"))
+}
+
+func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "POST" {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var transferReq db.TransferParams
+	err := json.NewDecoder(r.Body).Decode(&transferReq)
+	if err != nil {
+		http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if transferReq.Receiver == 0 || transferReq.Sender == 0 || transferReq.Amount == 0 {
+		http.Error(w, "Some fields are missing!", http.StatusBadRequest)
+		return
+	}
+	
+	exists, err := server.DBstore.UserExists(transferReq.Receiver)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
+		return
+	}
+	if !exists {
+		http.Error(w, "Receiver does not exist!", http.StatusNotFound)
+		return
+	}
+
+	exists, err = server.DBstore.UserExists(transferReq.Sender)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
+		return
+	}
+	if !exists {
+		http.Error(w, "Sender does not exist!", http.StatusNotFound)
+		return
+	}
+	
+	err = server.DBstore.TransferCoins(transferReq)
+	if err == db.ErrInsufficientBal {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
+		return
+	}
+
+	w.Write([]byte("Coins transferred!"))
+}
+
