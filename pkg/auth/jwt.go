@@ -1,4 +1,4 @@
-package server
+package auth
 
 import (
 	"errors"
@@ -8,6 +8,18 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 )
+
+var (
+	ErrInvalidToken = errors.New("token is invalid")
+	ErrExpiredToken = errors.New("token has expired")
+)
+
+type Payload struct {
+	ID        uuid.UUID `json:"id"`
+	Rollno    int       `json:"rollno"`
+	IssuedAt  time.Time `json:"issued_at"`
+	ExpiredAt time.Time `json:"expired_at"`
+}
 
 func NewPayload(rollno int) (*Payload, error) {
 
@@ -49,7 +61,7 @@ func VerifyToken(tokenString string) (*Payload, error) {
 
 	keyfunc := func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("Unexpected signing method")
+			return nil, errors.New("unexpected signing method")
 		}
 		return []byte(os.Getenv("ACCESS_SECRET")), nil
 	}
