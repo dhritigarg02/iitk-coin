@@ -106,23 +106,6 @@ func (server *Server) Signup(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Signup Successful!"))
 }
 
-func (server *Server) Secretpage(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != "GET" {
-		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
-		return
-	}
-
-	tokenString := r.Header.Get("Authorization")
-
-	_, err := auth.VerifyToken(tokenString)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	w.Write([]byte("Authorized!"))
-}
-
 func (server *Server) GetBalance(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "GET" {

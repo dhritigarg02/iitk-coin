@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dhritigarg02/iitk-coin/pkg/db"
+	"github.com/dhritigarg02/iitk-coin/pkg/middleware"
 )
 
 type Server struct {
@@ -19,10 +20,9 @@ func (server *Server) SetupRouter() {
 	router.HandleFunc("/", server.HelloHandler)
 	router.HandleFunc("/login", server.Login)
 	router.HandleFunc("/signup", server.Signup)
-	router.HandleFunc("/secretpage", server.Secretpage)
-	router.HandleFunc("/reward", server.RewardCoins)
-	router.HandleFunc("/transfer", server.TransferCoins)
-	router.HandleFunc("/getbalance", server.GetBalance)
+	router.Handle("/reward", middleware.NewEnsureAuth(server.RewardCoins))
+	router.Handle("/transfer", middleware.NewEnsureAuth(server.TransferCoins))
+	router.Handle("/getbalance", middleware.NewEnsureAuth(server.GetBalance))
 
 	server.Router = router
 }
