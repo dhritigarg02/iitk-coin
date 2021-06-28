@@ -5,6 +5,7 @@ type User struct {
 	RollNo      int  `json:"rollno"`
 	Password string  `json:"password"`
 	Batch       int  `json:"batch"`
+	IsAdmin		int  `json:"isadmin"`
 }
 
 type AuthUser struct {
@@ -13,7 +14,7 @@ type AuthUser struct {
 }
 
 type EntryParams struct {
-	RollNo    int  `json:"id"`
+	RollNo    int  `json:"rollno"`
 	Amount    int  `json:"amount"`
 }
   

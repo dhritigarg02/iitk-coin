@@ -23,6 +23,8 @@ func ConnectDB() *sql.DB {
 			rollno INTEGER NOT NULL UNIQUE, 
 			name TEXT NOT NULL, 
 			batch INTEGER NOT NULL,
+			isAdmin INTEGER DEFAULT 0,
+			events INTEGER DEFAULT 0,
 			createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 			)`)
 	handleError(err)

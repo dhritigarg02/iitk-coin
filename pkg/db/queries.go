@@ -10,13 +10,14 @@ func (q *Queries) CreateUser(req User) (error) {
 		`INSERT INTO User(
 			rollno,
 			name,
-			batch
-		) VALUES(?, ?, ?)
+			batch,
+			isAdmin
+		) VALUES(?, ?, ?, ?)
 		`)
 	if err != nil {
 		return err
 	}
-	_, err = statement.Exec(req.RollNo, req.Name, req.Batch)
+	_, err = statement.Exec(req.RollNo, req.Name, req.Batch, req.IsAdmin)
 	if err != nil {
 		return err
 	}
@@ -152,4 +153,24 @@ func (q* Queries) GetHashedPswd(rollno int) (string, error) {
 		&pswd,
 	)
 	return pswd, err
+}
+
+func (q* Queries) CheckAdmin(rollno int) (bool, error) {
+
+	var isAdmin bool
+
+	statement, err := q.db.Prepare(
+		`SELECT isAdmin
+		FROM User
+		WHERE rollno = ?
+		`)
+	if err != nil {
+		return false, err
+	}
+
+	row := statement.QueryRow(rollno)
+	err = row.Scan(
+		&isAdmin,
+	)
+	return isAdmin, err
 }

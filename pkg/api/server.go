@@ -13,6 +13,19 @@ type Server struct {
 	Router *http.ServeMux
 }
 
+func NewEnsureAuth(handlerToWrap http.HandlerFunc) *middleware.EnsureAuth {
+    return &middleware.EnsureAuth{
+		Handler : handlerToWrap,
+	}
+}
+
+func (server *Server) NewEnsureAdmin(handlerToWrap http.HandlerFunc) *middleware.EnsureAdmin {
+    return &middleware.EnsureAdmin{
+		Handler : handlerToWrap, 
+		Dbstore : server.DBstore,
+	}
+}
+
 func (server *Server) SetupRouter() {
 
 	router := http.NewServeMux()
@@ -20,9 +33,9 @@ func (server *Server) SetupRouter() {
 	router.HandleFunc("/", server.HelloHandler)
 	router.HandleFunc("/login", server.Login)
 	router.HandleFunc("/signup", server.Signup)
-	router.Handle("/reward", middleware.NewEnsureAuth(server.RewardCoins))
-	router.Handle("/transfer", middleware.NewEnsureAuth(server.TransferCoins))
-	router.Handle("/getbalance", middleware.NewEnsureAuth(server.GetBalance))
+	router.Handle("/reward", server.NewEnsureAdmin(server.RewardCoins))
+	router.Handle("/transfer", NewEnsureAuth(server.TransferCoins))
+	router.Handle("/getbalance", NewEnsureAuth(server.GetBalance))
 
 	server.Router = router
 }
