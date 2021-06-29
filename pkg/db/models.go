@@ -22,6 +22,8 @@ type TransferParams struct {
 	Receiver   int  `json:"receiver"`
 	Sender     int  `json:"sender"`
 	Amount     int  `json:"amount"`
+	Tax		   int  
+	AmountRcvd int
 	Remarks string  `json:"remarks"`
 }
 

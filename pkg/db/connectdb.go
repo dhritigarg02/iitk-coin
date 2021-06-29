@@ -70,6 +70,8 @@ func ConnectDB() *sql.DB {
 			receiver INTEGER NOT NULL,
 			sender INTEGER NOT NULL,
 			amount INTEGER NOT NULL,
+			tax INTEGER,
+			amountrcvd INTEGER,
 			remarks TEXT,
 			time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 			)`)

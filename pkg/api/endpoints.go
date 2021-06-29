@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"fmt"
 
 	"github.com/dhritigarg02/iitk-coin/pkg/auth"
 	"github.com/dhritigarg02/iitk-coin/pkg/db"
@@ -176,7 +177,7 @@ func (server *Server) RewardCoins(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[RewardCoins] [ERROR] : %v\n", err)
 		return
 	}
-	w.Write([]byte("coins rewarded!"))
+	w.Write([]byte(fmt.Sprintf("%d coins rewarded to %d", reward.Amount, reward.RollNo)))
 }
 
 func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +220,14 @@ func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Sender does not exist!", http.StatusNotFound)
 		return
 	}
+
+	transferReq.Tax, err = server.DBstore.GetTax(transferReq.Sender, transferReq.Receiver)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
+		return
+	}
+	transferReq.AmountRcvd = server.DBstore.CalculateAmntRcvd(transferReq.Amount, transferReq.Tax)
 	
 	err = server.DBstore.TransferCoins(transferReq)
 	if err == db.ErrInsufficientBal {
@@ -230,6 +239,8 @@ func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Coins transferred!"))
+	w.Write([]byte(fmt.Sprintf("%d coins transferred by %d to %d\nAmount received by %d after tax deduction of %d%% is %d",
+								transferReq.Amount, transferReq.Sender, transferReq.Receiver,
+								transferReq.Receiver, transferReq.Tax, transferReq.AmountRcvd)))
 }
 

@@ -28,6 +28,8 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 type DBStore struct {
 	db *sql.DB
 	*Queries
+	IntraBatchTax int
+	InterBatchTax int
 }
 
 // NewStore creates a new store
@@ -35,5 +37,7 @@ func NewStore(db *sql.DB) DBStore {
 	return DBStore{
 		db:      db,
 		Queries: New(db),
+		IntraBatchTax: 2,
+		InterBatchTax: 33,
 	}
 }

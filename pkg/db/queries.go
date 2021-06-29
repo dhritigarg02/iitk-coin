@@ -89,14 +89,16 @@ func (q *Queries) AddTransfer(req TransferParams) (error) {
 			receiver,
 			sender,
 			amount,
+			tax,
+			amountrcvd,
 			remarks
-		) VALUES(?, ?, ?, ?, ?)
+		) VALUES(?, ?, ?, ?, ?, ?)
 		`)
 	if err != nil {
 		return err
 	}
 
-	_, err = statement.Exec(req.Receiver, req.Sender, req.Amount, req.Remarks)
+	_, err = statement.Exec(req.Receiver, req.Sender, req.Amount, req.Tax, req.AmountRcvd, req.Remarks)
 	return err
 }
 

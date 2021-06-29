@@ -8,6 +8,48 @@ import(
 
 var ErrInsufficientBal = errors.New("insufficient balance in sender's wallet")
 
+func (store *DBStore) CalculateAmntRcvd(amount int, tax int) int {
+
+	amnt := float64(amount) * float64(1.0 - float64(tax)/100)
+	
+	return int(amnt)
+}
+
+func (store *DBStore) GetTax(roll1 int, roll2 int) (int, error){
+
+	var batch1, batch2 int
+
+	statement, err := store.db.Prepare(
+		`SELECT batch
+		FROM User
+		WHERE rollno = ?
+		`)
+	if err != nil {
+		return 0, err
+	}
+
+	row := statement.QueryRow(roll1)
+	err = row.Scan(
+		&batch1,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	row = statement.QueryRow(roll2)
+	err = row.Scan(
+		&batch2,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	if batch1 == batch2 {
+		return store.IntraBatchTax, nil
+	} else {
+		return store.InterBatchTax, nil
+	}
+}
 
 func (store *DBStore) ExecTx(fn func(*Queries) error) error {
 
@@ -72,7 +114,7 @@ func (store *DBStore) TransferCoins(req TransferParams) error {
 
 		err = q.UpdateBalance(EntryParams{
 			RollNo: req.Receiver,
-			Amount: req.Amount,
+			Amount: req.AmountRcvd,
 		})
 		if err != nil {
 			return err
@@ -93,7 +135,7 @@ func (store *DBStore) TransferCoins(req TransferParams) error {
 
 		err = q.AddEntry(EntryParams{
 			RollNo: req.Receiver,
-			Amount: req.Amount,
+			Amount: req.AmountRcvd,
 		})
 		return err
 	})
