@@ -8,26 +8,28 @@ import(
 	"github.com/dhritigarg02/iitk-coin/pkg/db"
 )
 
+type AuthenticatedHandler func(http.ResponseWriter, *http.Request, int)
+
 type EnsureAuth struct {
-    Handler http.HandlerFunc
+    Handler AuthenticatedHandler
 }
 
 func (ea *EnsureAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	tokenString := r.Header.Get("Authorization")
 
-	_, err := auth.VerifyToken(tokenString)
+	payload, err := auth.VerifyToken(tokenString)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-    ea.Handler(w, r)
+    ea.Handler(w, r, payload.Rollno)
 }
 
 type EnsureAdmin struct {
     Handler http.HandlerFunc
-	Dbstore db.DBStore
+	DBstore db.DBStore
 }
 
 func (ea *EnsureAdmin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +42,7 @@ func (ea *EnsureAdmin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isAdmin, err := ea.Dbstore.CheckAdmin(payload.Rollno)
+	isAdmin, err := ea.DBstore.CheckAdmin(payload.Rollno)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("[EnsureAdmin] [ERROR] : %v\n", err)

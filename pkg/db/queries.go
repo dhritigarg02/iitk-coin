@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"database/sql"
 )
 
@@ -15,11 +16,11 @@ func (q *Queries) CreateUser(req User) (error) {
 		) VALUES(?, ?, ?, ?)
 		`)
 	if err != nil {
-		return err
+		return fmt.Errorf("[CreateUser] : %v", err)
 	}
 	_, err = statement.Exec(req.RollNo, req.Name, req.Batch, req.IsAdmin)
 	if err != nil {
-		return err
+		return fmt.Errorf("[CreateUser] : %v", err)
 	}
 
 	statement, err = q.db.Prepare(
@@ -29,11 +30,11 @@ func (q *Queries) CreateUser(req User) (error) {
 		) VALUES(?, ?)
 		`)
 	if err != nil {
-		return err
+		return fmt.Errorf("[CreateUser] : %v", err)
 	}
 	_, err = statement.Exec(req.RollNo, req.Password)
 	if err != nil {
-		return err
+		return fmt.Errorf("[CreateUser] : %v", err)
 	}
 
 	statement, err = q.db.Prepare(
@@ -43,10 +44,14 @@ func (q *Queries) CreateUser(req User) (error) {
 		) VALUES(?, ?)
 		`)
 	if err != nil {
-		return err
+		return fmt.Errorf("[CreateUser] : %v", err)
 	}
 	_, err = statement.Exec(req.RollNo, 0)
-	return err
+	if err != nil {
+		return fmt.Errorf("[CreateUser] : %v", err)
+	}
+
+	return nil
 }
 
 func (q *Queries) UserExists(rollno int) (bool, error) {
@@ -62,7 +67,7 @@ func (q *Queries) UserExists(rollno int) (bool, error) {
 		case nil:
 			return true, nil
 		default:
-			return false, err
+			return false, fmt.Errorf("[UserExists] : %v", err)
 	}
 }
 
@@ -75,11 +80,15 @@ func (q *Queries) AddEntry(req EntryParams) (error) {
 		) VALUES(?, ?)
 		`)
 	if err != nil {
-		return err
+		return fmt.Errorf("[AddEntry] : %v", err)
 	}
 
 	_, err = statement.Exec(req.RollNo, req.Amount)
-	return err
+	if err != nil {
+		return fmt.Errorf("[AddEntry] : %v", err)
+	}
+
+	return nil
 }
 
 func (q *Queries) AddTransfer(req TransferParams) (error) {
@@ -95,11 +104,15 @@ func (q *Queries) AddTransfer(req TransferParams) (error) {
 		) VALUES(?, ?, ?, ?, ?, ?)
 		`)
 	if err != nil {
-		return err
+		return fmt.Errorf("[AddTransfer] : %v", err)
 	}
 
 	_, err = statement.Exec(req.Receiver, req.Sender, req.Amount, req.Tax, req.AmountRcvd, req.Remarks)
-	return err
+	if err != nil {
+		return fmt.Errorf("[AddTransfer] : %v", err)
+	}
+
+	return nil
 }
 
 func (q *Queries) UpdateBalance(req EntryParams) (error) {
@@ -110,11 +123,15 @@ func (q *Queries) UpdateBalance(req EntryParams) (error) {
 		WHERE rollno = ?
 		`)
 	if err != nil {
-		return err
+		return fmt.Errorf("[UpdateBalance] : %v", err)
 	}
 
 	_, err = statement.Exec(req.Amount, req.RollNo)
-	return err
+	if err != nil {
+		return fmt.Errorf("[UpdateBalance] : %v", err)
+	}
+
+	return nil
 }
 
 func (q *Queries) GetBalance(rollno int) (int, error) {
@@ -127,14 +144,18 @@ func (q *Queries) GetBalance(rollno int) (int, error) {
 		WHERE rollno = ?
 		`)
 	if err != nil {
-		return balance, err
+		return balance, fmt.Errorf("[GetBalance] : %v", err)
 	}
 
 	row := statement.QueryRow(rollno)
 	err = row.Scan(
 		&balance,
 	)
-	return balance, err
+	if err != nil {
+		return balance, fmt.Errorf("[GetBalance] : %v", err)
+	}
+
+	return balance, nil
 }
 
 func (q* Queries) GetHashedPswd(rollno int) (string, error) {
@@ -147,14 +168,18 @@ func (q* Queries) GetHashedPswd(rollno int) (string, error) {
 		WHERE rollno = ?
 		`)
 	if err != nil {
-		return pswd, err
+		return pswd, fmt.Errorf("[GetHashedPswd] : %v", err)
 	}
 
 	row := statement.QueryRow(rollno)
 	err = row.Scan(
 		&pswd,
 	)
-	return pswd, err
+	if err != nil {
+		return pswd, fmt.Errorf("[GetHashedPswd] : %v", err)
+	}
+
+	return pswd, nil
 }
 
 func (q* Queries) CheckAdmin(rollno int) (bool, error) {
@@ -167,12 +192,16 @@ func (q* Queries) CheckAdmin(rollno int) (bool, error) {
 		WHERE rollno = ?
 		`)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("[CheckAdmin] : %v", err)
 	}
 
 	row := statement.QueryRow(rollno)
 	err = row.Scan(
 		&isAdmin,
 	)
-	return isAdmin, err
+	if err != nil {
+		return false, fmt.Errorf("[CheckAdmin] : %v", err)
+	}
+
+	return isAdmin, nil
 }

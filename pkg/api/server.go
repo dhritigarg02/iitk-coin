@@ -1,3 +1,4 @@
+// Package api sets up the server and contains all the handler functions.
 package api
 
 import (
@@ -8,12 +9,11 @@ import (
 )
 
 type Server struct {
-
 	DBstore db.DBStore
 	Router *http.ServeMux
 }
 
-func NewEnsureAuth(handlerToWrap http.HandlerFunc) *middleware.EnsureAuth {
+func NewEnsureAuth(handlerToWrap middleware.AuthenticatedHandler) *middleware.EnsureAuth {
     return &middleware.EnsureAuth{
 		Handler : handlerToWrap,
 	}
@@ -22,7 +22,7 @@ func NewEnsureAuth(handlerToWrap http.HandlerFunc) *middleware.EnsureAuth {
 func (server *Server) NewEnsureAdmin(handlerToWrap http.HandlerFunc) *middleware.EnsureAdmin {
     return &middleware.EnsureAdmin{
 		Handler : handlerToWrap, 
-		Dbstore : server.DBstore,
+		DBstore : server.DBstore,
 	}
 }
 

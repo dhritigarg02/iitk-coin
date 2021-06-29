@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -25,7 +26,7 @@ func NewPayload(rollno int) (*Payload, error) {
 
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[NewPayload] : %v", err)
 	}
 
 	payload := &Payload{
@@ -48,11 +49,11 @@ func CreateToken(rollno int) (string, error) {
 
 	payload, err := NewPayload(rollno)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("[CreateToken] : %v", err)
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, payload).SignedString([]byte(os.Getenv("ACCESS_SECRET")))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("[CreateToken] : %v", err)
 	}
 	return token, nil
 }

@@ -3,15 +3,13 @@ package db
 import(
 	"fmt"
 	"errors"
-	"log"
 )
 
-var ErrInsufficientBal = errors.New("insufficient balance in sender's wallet")
+var ErrInsufficientBal = errors.New("insufficient balance in your wallet")
 
 func (store *DBStore) CalculateAmntRcvd(amount int, tax int) int {
 
-	amnt := float64(amount) * float64(1.0 - float64(tax)/100)
-	
+	amnt := float64(amount) * (1.0 - float64(tax)/100)
 	return int(amnt)
 }
 
@@ -25,7 +23,7 @@ func (store *DBStore) GetTax(roll1 int, roll2 int) (int, error){
 		WHERE rollno = ?
 		`)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("[GetTax] : %v", err)
 	}
 
 	row := statement.QueryRow(roll1)
@@ -33,7 +31,7 @@ func (store *DBStore) GetTax(roll1 int, roll2 int) (int, error){
 		&batch1,
 	)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("[GetTax] : %v", err)
 	}
 
 	row = statement.QueryRow(roll2)
@@ -41,7 +39,7 @@ func (store *DBStore) GetTax(roll1 int, roll2 int) (int, error){
 		&batch2,
 	)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("[GetTax] : %v", err)
 	}
 
 	if batch1 == batch2 {
@@ -55,7 +53,7 @@ func (store *DBStore) ExecTx(fn func(*Queries) error) error {
 
 	tx, err := store.db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("[ExecTx] : %v", err)
 	}
 
 	q := New(tx)
@@ -64,7 +62,7 @@ func (store *DBStore) ExecTx(fn func(*Queries) error) error {
 		if rbErr := tx.Rollback(); rbErr != nil { 
 			return fmt.Errorf("[Tx error]: %v [Rb error]: %v", err, rbErr)
 		}
-		return err
+		return fmt.Errorf("[ExecTx] : %v", err)
 	}
 	return tx.Commit()
 }
@@ -75,14 +73,22 @@ func (store *DBStore) AddCoins(req EntryParams) error {
 
 		err := q.AddEntry(req)
 		if err != nil {
-			return err
+			return fmt.Errorf("[AddCoins] : %v", err)
 		}
 
 		err = q.UpdateBalance(req)
-		return err
+		if err != nil {
+			return fmt.Errorf("[AddCoins] : %v", err)
+		}
+
+		return nil
 	})
 
-	return err
+	if err != nil {
+		return fmt.Errorf("[AddCoins] : %v", err)
+	}
+
+	return nil
 }
 
 func (store *DBStore) TransferCoins(req TransferParams) error {
@@ -95,19 +101,18 @@ func (store *DBStore) TransferCoins(req TransferParams) error {
 			WHERE rollno = ?
 			`)
 		if err != nil {
-			return err
+			return fmt.Errorf("[TransferCoins] : %v", err)
 		}
 		result, err := statement.Exec(req.Amount, req.Amount, req.Sender)
 		if err != nil {
-			return err
+			return fmt.Errorf("[TransferCoins] : %v", err)
 		}
 		numRowsAffected, err := result.RowsAffected()
 		if err != nil {
-			return err
+			return fmt.Errorf("[TransferCoins] : %v", err)
 		}
 		if numRowsAffected > 1 {
-			log.Printf("[TransferCoins] [ERROR] : Duplicate rows in database!, %v", err)
-			return errors.New("internal Server Error")
+			return fmt.Errorf("[TransferCoins] : Duplicate rows in database!, %v", err)
 		} else if numRowsAffected == 0 {
 			return ErrInsufficientBal
 		}
@@ -117,12 +122,12 @@ func (store *DBStore) TransferCoins(req TransferParams) error {
 			Amount: req.AmountRcvd,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("[TransferCoins] : %v", err)
 		}
 
 		err = q.AddTransfer(req)
 		if err != nil {
-			return err
+			return fmt.Errorf("[TransferCoins] : %v", err)
 		}
 
 		err = q.AddEntry(EntryParams{
@@ -130,16 +135,24 @@ func (store *DBStore) TransferCoins(req TransferParams) error {
 			Amount: -req.Amount,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("[TransferCoins] : %v", err)
 		}
 
 		err = q.AddEntry(EntryParams{
 			RollNo: req.Receiver,
 			Amount: req.AmountRcvd,
 		})
-		return err
+
+		if err != nil {
+			return fmt.Errorf("[TransferCoins] : %v", err)
+		}
+		return nil
 	})
-	return err
+
+	if err != nil {
+		return fmt.Errorf("[TransferCoins] : %v", err)
+	}
+	return nil
 }
 
 

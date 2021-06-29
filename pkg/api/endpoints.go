@@ -15,6 +15,8 @@ func (server *Server) HelloHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello, Web!\n"))
 }
 
+// Login logs the user in by comparing the password input
+// by the user to the hashed password stored in the database.
 func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
@@ -60,6 +62,7 @@ func (server *Server) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token":token})
 }
 
+// Signup creates a new user account.
 func (server *Server) Signup(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
@@ -81,7 +84,7 @@ func (server *Server) Signup(w http.ResponseWriter, r *http.Request) {
 
 	exists, err := server.DBstore.UserExists(newUser.RollNo)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("[Signup] [ERROR] : %v\n", err)
 		return
 	}
@@ -107,26 +110,15 @@ func (server *Server) Signup(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Signup Successful!"))
 }
 
-func (server *Server) GetBalance(w http.ResponseWriter, r *http.Request) {
+// GetBalance retrieves the wallet balance of the logged-in user.
+func (server *Server) GetBalance(w http.ResponseWriter, r *http.Request, rollno int) {
 
 	if r.Method != "GET" {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var user db.RollNo
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
-		return
-	}
-
-	if user.RollNo == 0 {
-		http.Error(w, "Some fields are missing!", http.StatusBadRequest)
-		return
-	}
-
-	balance, err := server.DBstore.GetBalance(user.RollNo)
+	balance, err := server.DBstore.GetBalance(rollno)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "User does not exist!", http.StatusNotFound)
@@ -141,6 +133,8 @@ func (server *Server) GetBalance(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]int{"coins":balance})
 }
 
+// RewardCoins generates and adds coins to the system
+// by rewarding them to the users. 
 func (server *Server) RewardCoins(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
@@ -162,7 +156,7 @@ func (server *Server) RewardCoins(w http.ResponseWriter, r *http.Request) {
 
 	exists, err := server.DBstore.UserExists(reward.RollNo)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("[RewardCoins] [ERROR] : %v\n", err)
 		return
 	}
@@ -171,16 +165,29 @@ func (server *Server) RewardCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isAdmin, err := server.DBstore.CheckAdmin(reward.RollNo)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("[RewardCoins] [ERROR] : %v\n", err)
+		return
+	}
+	if isAdmin {
+		http.Error(w, "Admins cannot reward coins to themselves!!!", http.StatusBadRequest)
+		return
+	}
+
 	err = server.DBstore.AddCoins(reward)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("[RewardCoins] [ERROR] : %v\n", err)
 		return
 	}
 	w.Write([]byte(fmt.Sprintf("%d coins rewarded to %d", reward.Amount, reward.RollNo)))
 }
 
-func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
+// TransferCoins allows transfer of coins between two users,
+// a certain percentage of coin involved is destroyed in the form of taxes.
+func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request, rollno int) {
 
 	if r.Method != "POST" {
 		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
@@ -194,14 +201,16 @@ func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if transferReq.Receiver == 0 || transferReq.Sender == 0 || transferReq.Amount == 0 {
+	if transferReq.Receiver == 0 || transferReq.Amount == 0 {
 		http.Error(w, "Some fields are missing!", http.StatusBadRequest)
 		return
 	}
+
+	transferReq.Sender = rollno
 	
 	exists, err := server.DBstore.UserExists(transferReq.Receiver)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
 		return
 	}
@@ -210,20 +219,9 @@ func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists, err = server.DBstore.UserExists(transferReq.Sender)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
-		return
-	}
-	if !exists {
-		http.Error(w, "Sender does not exist!", http.StatusNotFound)
-		return
-	}
-
 	transferReq.Tax, err = server.DBstore.GetTax(transferReq.Sender, transferReq.Receiver)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
 		return
 	}
@@ -234,7 +232,7 @@ func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("[TransferCoins] [ERROR] : %v\n", err)
 		return
 	}
