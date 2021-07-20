@@ -158,6 +158,50 @@ func (q *Queries) GetBalance(rollno int) (int, error) {
 	return balance, nil
 }
 
+func (q *Queries) GetItemCost(itemid int) (int, error) {
+
+	var cost int
+
+	statement, err := q.db.Prepare(
+		`SELECT cost
+		FROM Items
+		WHERE itemid = ?
+		`)
+	if err != nil {
+		return cost, fmt.Errorf("[GetItemCost] : %v", err)
+	}
+
+	row := statement.QueryRow(itemid)
+	err = row.Scan(
+		&cost,
+	)
+	if err != nil {
+		return cost, fmt.Errorf("[GetItemCost] : %v", err)
+	}
+
+	return cost, nil
+}
+
+func (q *Queries) AddRedeemReq(req Redeem) (error) {
+
+	statement, err := q.db.Prepare(
+		`INSERT INTO RedeemReqs (
+			rollno,
+			itemid
+		) VALUES(?, ?)
+		`)
+	if err != nil {
+		return fmt.Errorf("[AddRedeemReq] : %v", err)
+	}
+
+	_, err = statement.Exec(req.RollNo, req.ItemId)
+	if err != nil {
+		return fmt.Errorf("[AddRedeemReq] : %v", err)
+	}
+
+	return nil
+}
+
 func (q* Queries) GetHashedPswd(rollno int) (string, error) {
 
 	var pswd string

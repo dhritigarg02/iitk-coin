@@ -242,3 +242,34 @@ func (server *Server) TransferCoins(w http.ResponseWriter, r *http.Request, roll
 								transferReq.Receiver, transferReq.Tax, transferReq.AmountRcvd)))
 }
 
+func (server *Server) RedeemCoins(w http.ResponseWriter, r *http.Request, rollno int) {
+
+	if r.Method != "POST" {
+		http.Error(w, "Method is not supported.", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var redeemReq db.Redeem
+	err := json.NewDecoder(r.Body).Decode(&redeemReq)
+	if err != nil {
+		http.Error(w, "Invalid Json provided", http.StatusUnprocessableEntity)
+		return
+	}
+
+	if redeemReq.ItemId == 0 {
+		http.Error(w, "Some fields are missing!", http.StatusBadRequest)
+		return
+	}
+
+	redeemReq.RollNo = rollno
+
+	err = server.DBstore.AddRedeemReq(redeemReq)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("[RedeemCoins] [ERROR] : %v\n", err)
+		return
+	}
+
+	w.Write([]byte(fmt.Sprintf("Redeem request for itemId %d added with status: Pending", redeemReq.ItemId)))
+}
+

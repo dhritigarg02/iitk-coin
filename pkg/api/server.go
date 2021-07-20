@@ -36,6 +36,7 @@ func (server *Server) SetupRouter() {
 	router.Handle("/reward", server.NewEnsureAdmin(server.RewardCoins))
 	router.Handle("/transfer", NewEnsureAuth(server.TransferCoins))
 	router.Handle("/getbalance", NewEnsureAuth(server.GetBalance))
+	router.Handle("/redeem", NewEnsureAuth(server.RedeemCoins))
 
 	server.Router = router
 }

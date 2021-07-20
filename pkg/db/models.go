@@ -35,3 +35,8 @@ type WalletParams struct {
 type RollNo struct {
 	RollNo   int  `json:"rollno"`
 }
+
+type Redeem struct {
+	ItemId   int  `json:"itemid"`
+	RollNo   int  `json:"rollno"`
+}

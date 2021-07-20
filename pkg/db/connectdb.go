@@ -79,5 +79,32 @@ func ConnectDB() *sql.DB {
 	_, err = statement.Exec()
 	handleError(err)
 
+	statement, err = database.Prepare(
+		`CREATE TABLE IF NOT EXISTS Items (
+			id INTEGER PRIMARY KEY,
+			itemid INTEGER NOT NULL UNIQUE,
+			item TEXT NOT NULL,
+			cost INTEGER NOT NULL
+			)`)
+	handleError(err)
+
+	_, err = statement.Exec()
+	handleError(err)
+
+	statement, err = database.Prepare(
+		`CREATE TABLE IF NOT EXISTS RedeemReqs (
+			id INTEGER PRIMARY KEY,
+			rollno INTEGER NOT NULL,
+			itemid INTEGER NOT NULL,
+			status TEXT CHECK (status IN ('P', 'A', 'R')) NOT NULL DEFAULT 'P',
+			remarks TEXT,
+			time TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+			)`)
+			// Pending, Accepted, Rejected
+	handleError(err)
+
+	_, err = statement.Exec()
+	handleError(err)
+
 	return database
 }
